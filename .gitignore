@@ -34,3 +34,5 @@ env/
 
 # Local notebooks and tooling caches
 .cache/
+
+.adk
