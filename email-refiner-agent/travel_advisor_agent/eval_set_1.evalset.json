@@ -1,0 +1,178 @@
+{
+  "eval_set_id": "eval_set_1",
+  "name": "eval_set_1",
+  "eval_cases": [
+    {
+      "eval_id": "TokyoAugust",
+      "conversation": [
+        {
+          "invocation_id": "e-4f8e3f02-9eee-4293-b337-d23180407d92",
+          "user_content": {
+            "parts": [
+              {
+                "text": "I want to travel tokyo aug"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Traveling to Tokyo in August can be an exciting experience! Here's some information and tips to help you plan your trip:\n\n### Weather in Tokyo in August\nAugust is typically one of the hottest months in Tokyo, with high humidity and temperatures often ranging between 25°C to 35°C (77°F to 95°F). Rain is also common as it overlaps with the typhoon season. I can give you the current weather in Tokyo to give you an idea of what to expect. \n\n### Local Attractions in Tokyo\nTokyo offers a wide variety of attractions, from traditional temples to cutting-edge technology districts. Some must-see attractions include:\n- **Sensoji Temple**: A historic temple located in the Asakusa district.\n- **Tokyo Skytree**: Offers panoramic views of the city.\n- **Shibuya Crossing**: One of the busiest pedestrian crossings in the world.\n- **Harajuku**: Known for its vibrant youth culture and fashion.\n- **Akihabara**: The center of gaming, manga, and anime culture.\n\nI can provide a more detailed list of attractions if you'd like.\n\n### Currency and Exchanges\nThe currency in Tokyo is the Japanese Yen (JPY). If you need to know the current exchange rate, I can provide that as well, especially against your home currency.\n\nWould you like me to check the current weather, suggest more attractions, or provide currency exchange rates?"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {},
+          "creation_timestamp": 1781677318.728917
+        },
+        {
+          "invocation_id": "e-6dd1df27-fae3-435f-a6eb-5afa783f3d74",
+          "user_content": {
+            "parts": [
+              {
+                "text": "all"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Here's a comprehensive overview of what to expect when traveling to Tokyo in August:\n\n### Current Weather in Tokyo\n- **Temperature:** 22°C \n- **Condition:** Partly cloudy\n- **Humidity:** 65%\n- **Wind:** 12 km/h\n- **Forecast:** Mild weather with occasional clouds expected throughout the day.\n\n### Popular Attractions in Tokyo\n1. **Tokyo Tower**: A communications and observation tower with stunning views of the city. (Rating: 4.5)\n2. **Senso-ji**: An ancient Buddhist temple located in the historic Asakusa district. (Rating: 4.6)\n3. **Shibuya Crossing**: Known as the busiest pedestrian crossing in the world, a must-see landmark. (Rating: 4.4)\n4. **Meiji Shrine**: A Shinto shrine dedicated to Emperor Meiji, known for its peaceful surroundings. (Rating: 4.7)\n5. **Tokyo Skytree**: This broadcasting and observation tower offers panoramic views and is one of Tokyo's key landmarks. (Rating: 4.6)\n\n### Currency Exchange\n- **Exchange Rate:** 1 USD = 149.5 JPY\n\nIf you need more information, feel free to ask! Enjoy your planning, and have a wonderful trip to Tokyo!"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "invocation_events": [
+              {
+                "author": "TravelAdvisorAgent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "call_zyvFAvELeZ8WBPc4Fvcaxga8",
+                        "args": {
+                          "location": "Tokyo"
+                        },
+                        "name": "get_weather"
+                      }
+                    },
+                    {
+                      "function_call": {
+                        "id": "call_xPHe8aMNhfCfAMJtaR7dUGte",
+                        "args": {
+                          "location": "Tokyo"
+                        },
+                        "name": "get_local_attractions"
+                      }
+                    },
+                    {
+                      "function_call": {
+                        "id": "call_zriXFdHUPk2qiNKLolXf1wrZ",
+                        "args": {
+                          "from_currency": "USD",
+                          "to_currency": "JPY",
+                          "amount": 1
+                        },
+                        "name": "get_exchange_rate"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "TravelAdvisorAgent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "call_zyvFAvELeZ8WBPc4Fvcaxga8",
+                        "name": "get_weather",
+                        "response": {
+                          "location": "Tokyo",
+                          "temperature": "22°C",
+                          "condition": "Partly cloudy",
+                          "humidity": "65%",
+                          "wind": "12 km/h",
+                          "forecast": "Mild weather with occasional clouds expected throughout the day"
+                        }
+                      }
+                    },
+                    {
+                      "function_response": {
+                        "id": "call_xPHe8aMNhfCfAMJtaR7dUGte",
+                        "name": "get_local_attractions",
+                        "response": {
+                          "location": "Tokyo",
+                          "category": "all",
+                          "attractions": [
+                            {
+                              "name": "Tokyo Tower",
+                              "type": "landmark",
+                              "rating": 4.5,
+                              "description": "Communications and observation tower"
+                            },
+                            {
+                              "name": "Senso-ji",
+                              "type": "temple",
+                              "rating": 4.6,
+                              "description": "Ancient Buddhist temple"
+                            },
+                            {
+                              "name": "Shibuya Crossing",
+                              "type": "landmark",
+                              "rating": 4.4,
+                              "description": "Busiest pedestrian crossing"
+                            },
+                            {
+                              "name": "Meiji Shrine",
+                              "type": "shrine",
+                              "rating": 4.7,
+                              "description": "Shinto shrine dedicated to Emperor Meiji"
+                            },
+                            {
+                              "name": "Tokyo Skytree",
+                              "type": "tower",
+                              "rating": 4.6,
+                              "description": "Broadcasting and observation tower"
+                            }
+                          ],
+                          "total_count": 5
+                        }
+                      }
+                    },
+                    {
+                      "function_response": {
+                        "id": "call_zriXFdHUPk2qiNKLolXf1wrZ",
+                        "name": "get_exchange_rate",
+                        "response": {
+                          "from_currency": "USD",
+                          "to_currency": "JPY",
+                          "amount": 1,
+                          "exchange_rate": 149.5,
+                          "converted_amount": 149.5,
+                          "timestamp": "2024-03-15 10:30:00 UTC"
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              }
+            ]
+          },
+          "creation_timestamp": 1781677350.0175831
+        }
+      ],
+      "session_input": {
+        "app_name": "email_refiner",
+        "user_id": "user"
+      },
+      "creation_timestamp": 1781677404.186017
+    }
+  ],
+  "creation_timestamp": 1781677368.7857358
+}
