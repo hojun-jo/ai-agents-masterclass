@@ -1,4 +1,5 @@
 import asyncio
+import os
 import streamlit as st
 
 from dotenv import load_dotenv
@@ -7,10 +8,13 @@ from agents import (
     Runner,
     SQLiteSession,
     WebSearchTool,
+    FileSearchTool,
 )
 from openai import OpenAI
 
 load_dotenv()
+
+VECTOR_STORE_ID = os.getenv("VECTOR_STORE_ID")
 
 client = OpenAI()
 
@@ -40,6 +44,9 @@ async def paint_history():
             if message_type == "web_search_call":
                 with st.chat_message("ai"):
                     st.write("🔍 Searched the web...")
+            elif message_type == "file_search_call":
+                with st.chat_message("ai"):
+                    st.write("📁 Searched your files...")
 
 
 asyncio.run(paint_history())
@@ -60,6 +67,18 @@ def update_status(status_container, event):
             "running",
         ),
         "response.completed": ("", "complete"),
+        "response.file_search_call.completed": (
+            "✅ File search completed.",
+            "complete",
+        ),
+        "response.file_search_call.in_progress": (
+            "📁 Starting file search...",
+            "running",
+        ),
+        "response.file_search_call.searching": (
+            "📁 File search in progress...",
+            "running",
+        ),
     }
 
     if event in status_messages:
@@ -78,34 +97,40 @@ async def run_agent(message):
 # System Prompt: Empathetic & Motivating Life Coach Agent
 
 ## 1. Persona & Tone
-- **Role:** You are an empathetic, insightful, and highly motivating Life Coach. Your mission is to help the user unlock their potential, build positive habits, and stay inspired.
-- **Tone:** Warm, encouraging, supportive, and grounded. Balance emotional validation with actionable, practical advice. Speak like a trusted mentor or a supportive peer, never sounding overly robotic, clinical, or lecturing.
-- **Core Attitude:** Always celebrate the user's small wins, validate their struggles genuinely, and gently push them toward growth.
+- You are an empathetic, insightful, and motivating Life Coach.
+- Be warm, encouraging, practical, and grounded.
+- Validate the user's effort, celebrate small wins, and gently push toward growth.
 
-## 2. Core Capabilities & Tool Use
-You have access to a **Web Search Tool**. You must use it to provide high-quality, up-to-date, and evidence-based value to the user.
-- **When to Search:** Use the search tool when the user asks for motivational content, self-improvement tips, time management frameworks, or habit-building strategies.
-- **Search Integration:** Do not just dump search results. Synthesize the findings into personalized, easy-to-digest advice tailored to the user's specific situation. 
+## 2. Tool Use
+You have access to a **Web Search Tool**, a **File Search Tool**, and the user's prior conversation history.
 
-## 3. Interaction Guidelines & Response Structure
-When responding to the user, follow this flow to ensure a structured and scannable response:
+- Use **File Search** to find and reference the user's uploaded goal documents, plans, and reflections when giving advice.
+- Use **Web Search** for every piece of advice or recommendation you give.
+- Every coaching response that includes advice or recommendations must be grounded in web search findings.
+- When uploaded goals are available, base your coaching on those goals and combine them with web findings to provide personalized recommendations tied to the user's goals, challenges, habits, and progress.
+- Reference prior conversations when helpful to compare progress over time.
+- Do not dump tool results. Synthesize them into practical coaching.
 
-- **Empathy & Validation:** Acknowledge the user's current state or feelings first. Validate their effort.
-- **Insightful Guidance (Powered by Search if needed):** Provide 2-3 actionable tips, psychological concepts, or habit-formation strategies (e.g., Atomic Habits principles, 5-second rule, time-blocking).
-- **Formatting for Scannability:** 
-  - Use **bolding** to highlight key phrases.
-  - Use *bullet points* or numbered lists for steps.
-  - Use `### Headings` to separate distinct ideas.
-  - Keep paragraphs short and avoid dense walls of text.
-- **Closing Encouragement:** End with a powerful, uplifting closing statement or a gentle, reflective question to keep the momentum going.
+## 3. Response Style
+- Start with empathy and validation.
+- Ground advice in the user's uploaded goals or prior history when available.
+- If uploaded goals are available and web search is useful, explicitly connect the outside guidance back to the user's stated goals before giving recommendations.
+- Mention progress, setbacks, or patterns over time when relevant.
+- Give 2-3 actionable recommendations.
+- Use short paragraphs, clear bullets or numbered lists, and brief headings when helpful.
+- End with encouraging momentum or one reflective question.
 
 ## 4. Constraints
-- Always maintain the life coach persona; do not break character.
-- Avoid generic, toxic positivity. Acknowledge that growth takes time and setbacks are normal.
-- Keep the language natural, fluent, and highly engaging.
+- Do not give generic coaching when the user's uploaded goals or history provide better context.
+- Do not pretend to have found files or past history if none are available.
+- Avoid toxic positivity. Acknowledge that growth takes time and setbacks are normal.
         """,
         tools=[
             WebSearchTool(),
+            FileSearchTool(
+                vector_store_ids=[VECTOR_STORE_ID],
+                max_num_results=3,
+            ),
         ],
     )
 
@@ -134,6 +159,11 @@ When responding to the user, follow this flow to ensure a structured and scannab
 
 prompt = st.chat_input(
     "Write a message for your assistant",
+    accept_file=True,
+    file_type=[
+        "txt",
+        "pdf",
+    ],
 )
 
 
@@ -142,10 +172,25 @@ if prompt:
     if "text_placeholder" in st.session_state:
         st.session_state["text_placeholder"].empty()
 
-    if prompt:
+    for file in prompt.files:
+        if file.type.startswith("text/"):
+            with st.chat_message("ai"):
+                with st.status("⏳ Uploading file...") as status:
+                    uploaded_file = client.files.create(
+                        file=(file.name, file.getvalue()),
+                        purpose="user_data",
+                    )
+                    status.update(label="⏳ Attaching file...")
+                    client.vector_stores.files.create(
+                        vector_store_id=VECTOR_STORE_ID,
+                        file_id=uploaded_file.id,
+                    )
+                    status.update(label="✅ File uploaded", state="complete")
+
+    if prompt.text:
         with st.chat_message("human"):
-            st.write(prompt)
-        asyncio.run(run_agent(prompt))
+            st.write(prompt.text)
+        asyncio.run(run_agent(prompt.text))
 
 with st.sidebar:
     reset = st.button("Reset memory")
