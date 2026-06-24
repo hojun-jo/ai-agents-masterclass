@@ -1,4 +1,5 @@
 from agents import Agent, RunContextWrapper
+from output_guardrails import restaurant_agent_output_guardrail
 
 
 def dynamic_reservation_agent_instructions(
@@ -42,4 +43,5 @@ def dynamic_reservation_agent_instructions(
 reservation_agent = Agent(
     name="Reservation Agent",
     instructions=dynamic_reservation_agent_instructions,
+    output_guardrails=[restaurant_agent_output_guardrail],
 )

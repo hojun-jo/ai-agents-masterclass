@@ -1,4 +1,5 @@
 from agents import Agent, RunContextWrapper
+from output_guardrails import restaurant_agent_output_guardrail
 
 
 def dynamic_order_agent_instructions(
@@ -41,4 +42,5 @@ def dynamic_order_agent_instructions(
 order_agent = Agent(
     name="Order Agent",
     instructions=dynamic_order_agent_instructions,
+    output_guardrails=[restaurant_agent_output_guardrail],
 )

@@ -1,10 +1,63 @@
-from agents import Agent, RunContextWrapper, handoff
+from agents import (
+    Agent,
+    GuardrailFunctionOutput,
+    RunContextWrapper,
+    Runner,
+    handoff,
+    input_guardrail,
+)
 import streamlit as st
 
-from models import HandoffData
+from models import HandoffData, InputGuardRailOutput
+from output_guardrails import restaurant_agent_output_guardrail
+from .complaints_agent import complaints_agent
 from .order_agent import order_agent
 from .menu_agent import menu_agent
 from .reservation_agent import reservation_agent
+
+input_guardrail_agent = Agent(
+    name="Input_Guardrail_Agent",
+    instructions="""
+    You are an input safety and relevance classifier for a restaurant assistant.
+
+    Your job is to classify whether the user's message should be rejected before it reaches the triage agent.
+
+    Mark `is_off_topic` as true when the user asks about something unrelated to a restaurant experience, such as:
+    - general knowledge
+    - coding or technical help
+    - politics, finance, medicine, or legal advice
+    - tasks unrelated to menu, food, orders, reservations, restaurant policies, hours, or dining requests
+
+    Mark `has_inappropriate_language` as true when the user message contains abusive, insulting, harassing, sexually explicit, or otherwise clearly inappropriate language directed at the assistant, staff, or others.
+
+    Do not mark a message as off-topic just because it is short or informal.
+    Do not mark a message as inappropriate for mild frustration alone unless the wording is clearly abusive or inappropriate.
+
+    Return a short reason explaining the decision.
+""",
+    output_type=InputGuardRailOutput,
+)
+
+
+@input_guardrail
+async def off_topic_guardrail(
+    wrapper: RunContextWrapper,
+    agent: Agent,
+    input: str,
+):
+    result = await Runner.run(
+        input_guardrail_agent,
+        input,
+        context=wrapper.context,
+    )
+
+    return GuardrailFunctionOutput(
+        output_info=result.final_output,
+        tripwire_triggered=(
+            result.final_output.is_off_topic
+            or result.final_output.has_inappropriate_language
+        ),
+    )
 
 
 def dynamic_triage_agent_instructions(
@@ -24,6 +77,7 @@ def dynamic_triage_agent_instructions(
     - Send menu questions, dish descriptions, ingredients, cooking methods, allergy questions, vegetarian/vegan questions, and spice-level questions to the Menu Agent.
     - Send order placement, item selection, quantity changes, option changes, order confirmation, and pickup/delivery-related requests to the Order Agent.
     - Send table reservations, reservation time changes, party size changes, seating requests, and reservation availability questions to the Reservation Agent.
+    - Send complaints about food quality, missing or incorrect items, long waits, poor service, refund requests, discount requests, or requests to speak with a manager to the Complaints Agent.
 
     Operating principles:
     - Summarize the customer's intent in one sentence before deciding where to route them.
@@ -34,7 +88,7 @@ def dynamic_triage_agent_instructions(
 
     Handoff payload rules:
     - to_agent_name: use the exact destination agent name
-    - issue_type: use one of menu_question, order_request, reservation_request
+    - issue_type: use one of menu_question, order_request, reservation_request, complaint_request
     - issue_description: provide a short summary of the customer's request and any details already confirmed
     - reason: explain in one sentence why this agent is the correct destination
 
@@ -73,8 +127,11 @@ triage_agent = Agent(
     name="Triage_Agent",
     instructions=dynamic_triage_agent_instructions,
     handoffs=[
+        make_handoff(complaints_agent),
         make_handoff(reservation_agent),
         make_handoff(menu_agent),
         make_handoff(order_agent),
     ],
+    input_guardrails=[off_topic_guardrail],
+    output_guardrails=[restaurant_agent_output_guardrail],
 )

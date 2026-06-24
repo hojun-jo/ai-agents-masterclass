@@ -3,6 +3,8 @@ import streamlit as st
 
 from dotenv import load_dotenv
 from agents import (
+    InputGuardrailTripwireTriggered,
+    OutputGuardrailTripwireTriggered,
     Runner,
     SQLiteSession,
 )
@@ -39,9 +41,6 @@ async def paint_history():
 asyncio.run(paint_history())
 
 
-status = st.status
-
-
 async def run_agent(message):
     agent = triage_agent
 
@@ -51,18 +50,35 @@ async def run_agent(message):
 
         st.session_state["text_placeholder"] = text_placeholder
 
-        stream = Runner.run_streamed(
-            agent,
-            message,
-            session=session,
-        )
+        try:
 
-        async for event in stream.stream_events():
-            if event.type == "raw_response_event":
+            stream = Runner.run_streamed(
+                agent,
+                message,
+                session=session,
+            )
 
-                if event.data.type == "response.output_text.delta":
-                    response += event.data.delta
-                    text_placeholder.write(response)
+            async for event in stream.stream_events():
+                if event.type == "raw_response_event":
+
+                    if event.data.type == "response.output_text.delta":
+                        response += event.data.delta
+                        text_placeholder.write(response)
+
+        except InputGuardrailTripwireTriggered:
+            text_placeholder.empty()
+            st.warning(
+                "레스토랑 관련 문의만 도와드릴 수 있습니다. "
+                "메뉴, 주문, 예약, 불만 접수와 관련된 내용을 입력해 주세요."
+            )
+
+        except OutputGuardrailTripwireTriggered:
+            text_placeholder.empty()
+            st.warning(
+                "응답을 안전하게 제공할 수 없어 요청을 완료하지 못했습니다. "
+                "다시 말씀해 주시면 다른 방식으로 도와드리겠습니다."
+            )
+
 
 
 prompt = st.chat_input(
