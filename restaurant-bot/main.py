@@ -8,6 +8,7 @@ from agents import (
     Runner,
     SQLiteSession,
 )
+from config import is_debug_mode
 from openai import OpenAI
 from restaurant_agents.triage_agent import triage_agent
 
@@ -45,9 +46,11 @@ async def run_agent(message):
     agent = triage_agent
 
     with st.chat_message("ai"):
+        handoff_placeholder = st.empty()
         text_placeholder = st.empty()
         response = ""
 
+        st.session_state["handoff_placeholder"] = handoff_placeholder
         st.session_state["text_placeholder"] = text_placeholder
 
         try:
@@ -87,6 +90,9 @@ prompt = st.chat_input(
 
 if prompt:
 
+    if "handoff_placeholder" in st.session_state:
+        st.session_state["handoff_placeholder"].empty()
+
     if "text_placeholder" in st.session_state:
         st.session_state["text_placeholder"].empty()
 
@@ -100,4 +106,6 @@ with st.sidebar:
     reset = st.button("Reset memory")
     if reset:
         asyncio.run(session.clear_session())
-    st.write(asyncio.run(session.get_items()))
+
+    if is_debug_mode():
+        st.write(asyncio.run(session.get_items()))

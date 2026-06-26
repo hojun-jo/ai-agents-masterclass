@@ -8,6 +8,7 @@ from agents import (
 )
 import streamlit as st
 
+from config import is_debug_mode
 from models import HandoffData, InputGuardRailOutput
 from output_guardrails import restaurant_agent_output_guardrail
 from .complaints_agent import complaints_agent
@@ -99,15 +100,40 @@ def dynamic_triage_agent_instructions(
     """
 
 
-def handle_handoff(
+async def handle_handoff(
     wrapper: RunContextWrapper,
     input_data: HandoffData,
 ):
-    with st.status(f"{input_data.to_agent_name}에게 연결합니다..."):
-        st.write(f"{input_data.to_agent_name}에게 연결합니다...")
+    handoff_message = f"{input_data.to_agent_name}에게 연결합니다..."
+    handoff_placeholder = st.session_state.get("handoff_placeholder")
+    if handoff_placeholder is not None:
+        handoff_placeholder.write(handoff_message)
+    else:
+        st.write(handoff_message)
 
-    with st.sidebar:
-        st.write(f"""
+    session = st.session_state.get("session")
+    if session is not None:
+        await session.add_items(
+            [
+                {
+                    "role": "assistant",
+                    "type": "message",
+                    "status": "completed",
+                    "content": [
+                        {
+                            "type": "output_text",
+                            "text": handoff_message,
+                            "annotations": [],
+                            "logprobs": [],
+                        }
+                    ],
+                }
+            ]
+        )
+
+    if is_debug_mode():
+        with st.sidebar:
+            st.write(f"""
 Handing off to {input_data.to_agent_name}
 Reason: {input_data.reason}
 Issue Type: {input_data.issue_type}
