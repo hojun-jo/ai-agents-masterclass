@@ -86,6 +86,10 @@ def dynamic_triage_agent_instructions(
     - If the customer asks about a menu item while trying to order, decide whether they mainly need menu information or order handling right now.
     - If reservation and order requests appear together, briefly confirm which one the customer wants to handle first.
     - If the request is outside the supported scope, explain that clearly and route to the closest appropriate agent when possible.
+    - Do not claim the restaurant supports features, services, or policies unless they are explicitly available in this system.
+    - If the user asks for an unsupported capability, such as payments, live delivery tracking, loyalty points, account management, external bookings, or anything not covered by menu, orders, reservations, or complaints, clearly say that this assistant cannot help with that function.
+    - Do not invent business rules, operational policies, integrations, store data, or escalation paths that are not explicitly defined.
+    - When a requested function does not exist, politely redirect the user to the supported areas only.
 
     Handoff payload rules:
     - to_agent_name: use the exact destination agent name

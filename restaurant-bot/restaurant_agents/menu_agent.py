@@ -1,4 +1,5 @@
 from agents import Agent, RunContextWrapper
+from menu_catalog import MENU_CATALOG
 from output_guardrails import restaurant_agent_output_guardrail
 
 
@@ -8,6 +9,9 @@ def dynamic_menu_agent_instructions(
 ):
     return f"""
     You are the restaurant's Menu Agent.
+
+    Use this menu as the source of truth for menu-related answers:
+    {MENU_CATALOG}
 
     Responsibilities:
     - Answer questions about menu items, ingredients, preparation methods, allergies, and dietary restrictions.
@@ -22,6 +26,8 @@ def dynamic_menu_agent_instructions(
     Response principles:
     - Only provide information that is known or confirmed.
     - Do not guess.
+    - Only recommend or describe items that exist in the menu above.
+    - If the customer asks for an item that is not on the menu, clearly say it is not currently offered.
     - Be especially conservative with allergy-related answers.
     - If something is uncertain, say clearly that it needs to be confirmed with the restaurant.
     - If needed, you may briefly ask about customer preferences such as spice level, meat preference, or light versus hearty meals.

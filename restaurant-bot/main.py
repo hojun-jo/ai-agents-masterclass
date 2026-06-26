@@ -1,4 +1,5 @@
 import asyncio
+import uuid
 import streamlit as st
 
 from dotenv import load_dotenv
@@ -16,9 +17,12 @@ load_dotenv()
 
 client = OpenAI()
 
+if "client_session_id" not in st.session_state:
+    st.session_state["client_session_id"] = f"chat-{uuid.uuid4()}"
+
 if "session" not in st.session_state:
     st.session_state["session"] = SQLiteSession(
-        "chat-history",
+        st.session_state["client_session_id"],
         "chat-gpt-clone-memory.db",
     )
 session = st.session_state["session"]
