@@ -1,5 +1,6 @@
 import base64
 import re
+import asyncio
 from google.genai import types
 from openai import OpenAI
 from google.adk.tools.tool_context import ToolContext
@@ -49,38 +50,49 @@ def sanitize_illustration_prompt(text: str) -> str:
     )[:1500]
 
 
-async def generate_images(tool_context: ToolContext):
+async def generate_scene_image(tool_context: ToolContext, scene_id: int):
     prompt_builder_output = tool_context.state.get("prompt_builder_output") or {}
     optimized_prompts = prompt_builder_output.get("optimized_prompts") or []
 
     if not optimized_prompts:
         return {
-            "total_images": 0,
-            "generated_images": [],
             "status": "no_prompts",
+            "scene_id": scene_id,
         }
 
     existing_artifacts = await tool_context.list_artifacts()
+    prompt = next(
+        (item for item in optimized_prompts if item.get("scene_id") == scene_id),
+        None,
+    )
 
-    generated_images = []
+    if not prompt:
+        return {
+            "status": "scene_not_found",
+            "scene_id": scene_id,
+        }
 
-    for prompt in optimized_prompts:
-        scene_id = prompt.get("scene_id")
-        enhanced_prompt = prompt.get("enhanced_prompt")
-        safe_prompt = sanitize_illustration_prompt(enhanced_prompt)
-        filename = f"scene_{scene_id}_image.jpeg"
+    enhanced_prompt = (prompt.get("enhanced_prompt") or "").strip()
+    if not enhanced_prompt:
+        return {
+            "status": "invalid_prompt",
+            "scene_id": scene_id,
+        }
 
-        if filename in existing_artifacts:
-            generated_images.append(
-                {
-                    "scene_id": scene_id,
-                    "prompt": safe_prompt[:100],
-                    "filename": filename,
-                }
-            )
-            continue
+    safe_prompt = sanitize_illustration_prompt(enhanced_prompt)
+    filename = f"scene_{scene_id}_image.jpeg"
 
-        image = client.images.generate(
+    if filename in existing_artifacts:
+        return {
+            "status": "already_exists",
+            "scene_id": scene_id,
+            "filename": filename,
+            "prompt": safe_prompt[:100],
+        }
+
+    try:
+        image = await asyncio.to_thread(
+            client.images.generate,
             model="gpt-image-1.5",
             prompt=safe_prompt,
             n=1,
@@ -90,31 +102,37 @@ async def generate_images(tool_context: ToolContext):
             background="opaque",
             size="1024x1024",
         )
+    except Exception as exc:
+        return {
+            "status": "generation_failed",
+            "scene_id": scene_id,
+            "error": str(exc),
+        }
 
+    try:
         image_bytes = base64.b64decode(image.data[0].b64_json)
+    except Exception as exc:
+        return {
+            "status": "decode_failed",
+            "scene_id": scene_id,
+            "error": str(exc),
+        }
 
-        artifact = types.Part(
-            inline_data=types.Blob(
-                mime_type="image/jpeg",
-                data=image_bytes,
-            )
+    artifact = types.Part(
+        inline_data=types.Blob(
+            mime_type="image/jpeg",
+            data=image_bytes,
         )
+    )
 
-        await tool_context.save_artifact(
-            filename=filename,
-            artifact=artifact,
-        )
-
-        generated_images.append(
-            {
-                "scene_id": scene_id,
-                "prompt": safe_prompt[:100],
-                "filename": filename,
-            }
-        )
+    await tool_context.save_artifact(
+        filename=filename,
+        artifact=artifact,
+    )
 
     return {
-        "total_images": len(generated_images),
-        "generated_images": generated_images,
         "status": "complete",
+        "scene_id": scene_id,
+        "filename": filename,
+        "prompt": safe_prompt[:100],
     }

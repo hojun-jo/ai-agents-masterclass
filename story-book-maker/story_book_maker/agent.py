@@ -1,6 +1,6 @@
 from google.adk.agents import Agent, SequentialAgent
 from google.adk.models.lite_llm import LiteLlm
-from .sub_agents.illustrator_agent.agent import illustrator_agent
+from .sub_agents.illustrator_agent.agent import parallel_illustrator_agent
 from .sub_agents.prompt_builder.agent import prompt_builder_agent
 from .prompt import STORY_WRITER_DESCRIPTION, STORY_WRITER_PROMPT
 from pydantic import BaseModel, Field
@@ -39,6 +39,6 @@ root_agent = SequentialAgent(
     sub_agents=[
         story_wirter_agent,
         prompt_builder_agent,
-        illustrator_agent,
+        parallel_illustrator_agent,
     ],
 )
