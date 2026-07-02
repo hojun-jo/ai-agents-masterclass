@@ -1,21 +1,14 @@
 import logging
+from typing import AsyncGenerator
 
-from google.genai import types
-from google.adk.agents import Agent, ParallelAgent
-from google.adk.models.lite_llm import LiteLlm
-from .prompt import ILLUSTRATOR_DESCRIPTION, build_illustrator_prompt
+from google.adk.agents import BaseAgent, ParallelAgent
+from google.adk.agents.invocation_context import InvocationContext
+from google.adk.events.event import Event
+from google.adk.tools.tool_context import ToolContext
 from .tools import generate_scene_image
 
-MODEL = LiteLlm(model="openai/gpt-4o")
 logger = logging.getLogger(__name__)
-TOOL_ONLY_CONFIG = types.GenerateContentConfig(
-    tool_config=types.ToolConfig(
-        function_calling_config=types.FunctionCallingConfig(
-            mode=types.FunctionCallingConfigMode.ANY,
-            allowed_function_names=["generate_scene_image"],
-        )
-    )
-)
+ILLUSTRATOR_DESCRIPTION = "Generates the image for one assigned scene."
 
 
 def build_scene_logger(scene_id: int):
@@ -26,15 +19,47 @@ def build_scene_logger(scene_id: int):
     return log_scene_start
 
 
-def build_scene_agent(scene_id: int) -> Agent:
-    return Agent(
+class IllustratorSceneAgent(BaseAgent):
+    scene_id: int
+
+    async def _run_async_impl(
+        self,
+        ctx: InvocationContext,
+    ) -> AsyncGenerator[Event, None]:
+        tool_context = ToolContext(ctx)
+        result = await generate_scene_image(tool_context, self.scene_id)
+
+        yield Event(
+            invocation_id=ctx.invocation_id,
+            author=self.name,
+            branch=ctx.branch,
+            actions=tool_context._event_actions,
+        )
+
+        if result.get("status") not in {"complete", "already_exists"}:
+            yield Event(
+                invocation_id=ctx.invocation_id,
+                author=self.name,
+                branch=ctx.branch,
+                content={
+                    "role": "model",
+                    "parts": [
+                        {
+                            "text": (
+                                f"Failed to generate scene {self.scene_id}: "
+                                f"{result.get('status')}"
+                            )
+                        }
+                    ],
+                },
+            )
+
+
+def build_scene_agent(scene_id: int) -> IllustratorSceneAgent:
+    return IllustratorSceneAgent(
         name=f"IllustratorScene{scene_id}Agent",
         description=ILLUSTRATOR_DESCRIPTION,
-        model=MODEL,
-        mode="single_turn",
-        instruction=build_illustrator_prompt(scene_id),
-        generate_content_config=TOOL_ONLY_CONFIG,
-        tools=[generate_scene_image],
+        scene_id=scene_id,
         before_agent_callback=build_scene_logger(scene_id),
     )
 
