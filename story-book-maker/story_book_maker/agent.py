@@ -4,7 +4,12 @@ from google.adk.agents import Agent, SequentialAgent
 from google.adk.models.lite_llm import LiteLlm
 from .sub_agents.illustrator_agent.agent import parallel_illustrator_agent
 from .sub_agents.prompt_builder.agent import prompt_builder_agent
-from .prompt import STORY_WRITER_DESCRIPTION, STORY_WRITER_PROMPT
+from .prompt import (
+    FINAL_PRESENTER_DESCRIPTION,
+    FINAL_PRESENTER_PROMPT,
+    STORY_WRITER_DESCRIPTION,
+    STORY_WRITER_PROMPT,
+)
 from pydantic import BaseModel, Field
 
 MODEL = LiteLlm(model="openai/gpt-4o")
@@ -35,6 +40,11 @@ def log_story_writer_start(callback_context):
     return None
 
 
+def log_final_presenter_start(callback_context):
+    logger.info("최종 출력 정리 중...")
+    return None
+
+
 story_wirter_agent = Agent(
     name="StoryWriterAgent",
     model=MODEL,
@@ -45,6 +55,15 @@ story_wirter_agent = Agent(
     before_agent_callback=log_story_writer_start,
 )
 
+final_presenter_agent = Agent(
+    name="FinalPresenterAgent",
+    model=MODEL,
+    mode="single_turn",
+    description=FINAL_PRESENTER_DESCRIPTION,
+    instruction=FINAL_PRESENTER_PROMPT,
+    before_agent_callback=log_final_presenter_start,
+)
+
 
 root_agent = SequentialAgent(
     name="StoryBookMaker",
@@ -52,5 +71,6 @@ root_agent = SequentialAgent(
         story_wirter_agent,
         prompt_builder_agent,
         parallel_illustrator_agent,
+        final_presenter_agent,
     ],
 )

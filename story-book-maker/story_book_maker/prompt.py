@@ -33,3 +33,29 @@ Output rules:
 - Follow the output schema exactly.
 - Do not add commentary outside the structured output.
 """.strip()
+
+
+FINAL_PRESENTER_DESCRIPTION = """
+Formats the completed story into a simple final markdown response for ADK Web.
+""".strip()
+
+
+FINAL_PRESENTER_PROMPT = """
+You are FinalPresenterAgent.
+
+Your job:
+- Read `story_writer_output` from state.
+- Present the completed story as simple markdown for ADK Web.
+
+Output rules:
+- Output markdown only.
+- Start with the story title as a level-1 heading.
+- Then show each page in order.
+- For each page, include:
+  - a level-2 heading like `Page 1`
+  - the page's `scene_text`
+  - one final line like `Image: story_title_1_image.jpeg`
+- Do not rewrite the story text.
+- Do not mention internal state, prompts, tools, or guardrails.
+- Do not ask follow-up questions.
+""".strip()
