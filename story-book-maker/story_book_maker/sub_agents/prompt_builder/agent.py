@@ -1,9 +1,12 @@
+import logging
+
 from google.adk.agents import Agent
 from google.adk.models.lite_llm import LiteLlm
 from .prompt import PROMPT_BUILDER_DESCRIPTION, PROMPT_BUILDER_PROMPT
 from pydantic import BaseModel, Field
 
 MODEL = LiteLlm(model="openai/gpt-4o")
+logger = logging.getLogger(__name__)
 
 
 class OptimizedPrompt(BaseModel):
@@ -19,6 +22,11 @@ class PromptBuilderOutput(BaseModel):
     )
 
 
+def log_prompt_builder_start(callback_context):
+    logger.info("프롬프트 개선 중...")
+    return None
+
+
 prompt_builder_agent = Agent(
     name="PromptBuilderAgent",
     description=PROMPT_BUILDER_DESCRIPTION,
@@ -26,4 +34,5 @@ prompt_builder_agent = Agent(
     model=MODEL,
     output_schema=PromptBuilderOutput,
     output_key="prompt_builder_output",
+    before_agent_callback=log_prompt_builder_start,
 )

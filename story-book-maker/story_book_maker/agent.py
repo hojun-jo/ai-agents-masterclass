@@ -1,3 +1,5 @@
+import logging
+
 from google.adk.agents import Agent, SequentialAgent
 from google.adk.models.lite_llm import LiteLlm
 from .sub_agents.illustrator_agent.agent import parallel_illustrator_agent
@@ -6,6 +8,7 @@ from .prompt import STORY_WRITER_DESCRIPTION, STORY_WRITER_PROMPT
 from pydantic import BaseModel, Field
 
 MODEL = LiteLlm(model="openai/gpt-4o")
+logger = logging.getLogger(__name__)
 
 
 class SceneDescription(BaseModel):
@@ -19,9 +22,17 @@ class SceneDescription(BaseModel):
 
 
 class StoryWriterOutput(BaseModel):
+    title: str = Field(
+        description="Short, child-friendly title for the 5-page story",
+    )
     scene_descriptions: list[SceneDescription] = Field(
         description="Ordered list of the 5 story pages with text and illustration descriptions",
     )
+
+
+def log_story_writer_start(callback_context):
+    logger.info("스토리 작성 중...")
+    return None
 
 
 story_wirter_agent = Agent(
@@ -31,6 +42,7 @@ story_wirter_agent = Agent(
     instruction=STORY_WRITER_PROMPT,
     output_schema=StoryWriterOutput,
     output_key="story_writer_output",
+    before_agent_callback=log_story_writer_start,
 )
 
 

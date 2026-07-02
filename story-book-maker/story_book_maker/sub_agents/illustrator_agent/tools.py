@@ -51,10 +51,12 @@ def sanitize_illustration_prompt(text: str) -> str:
 
 
 async def generate_scene_image(tool_context: ToolContext, scene_id: int):
+    story_writer_output = tool_context.state.get("story_writer_output") or {}
+    title = story_writer_output.get("title") or ""
     prompt_builder_output = tool_context.state.get("prompt_builder_output") or {}
     optimized_prompts = prompt_builder_output.get("optimized_prompts") or []
 
-    if not optimized_prompts:
+    if not optimized_prompts or not title:
         return {
             "status": "no_prompts",
             "scene_id": scene_id,
@@ -80,7 +82,7 @@ async def generate_scene_image(tool_context: ToolContext, scene_id: int):
         }
 
     safe_prompt = sanitize_illustration_prompt(enhanced_prompt)
-    filename = f"scene_{scene_id}_image.jpeg"
+    filename = f"{title}_{scene_id}_image.jpeg"
 
     if filename in existing_artifacts:
         return {
